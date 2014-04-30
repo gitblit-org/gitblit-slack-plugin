@@ -10,7 +10,7 @@ name: gitblit-slack-plugin
 description: Integrate Gitblit with your Slack team
 groupId: com.gitblit.plugin
 artifactId: slack
-version: 1.0.0
+version: 1.0.1-SNAPSHOT
 packaging: zip
 inceptionYear: 2014
 organization: gitblit.com
