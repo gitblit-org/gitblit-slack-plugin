@@ -40,6 +40,12 @@ public class Plugin extends GitblitPlugin {
 
 	public static final String SETTING_POST_PERSONAL_REPOS = "slack.postPersonalRepos";
 
+	public static final String SETTING_POST_TICKETS = "slack.postTickets";
+
+	public static final String SETTING_POST_BRANCHES = "slack.postBranches";
+
+	public static final String SETTING_POST_TAGS = "slack.postTags";
+
 	public Plugin(PluginWrapper wrapper) {
 		super(wrapper);
 

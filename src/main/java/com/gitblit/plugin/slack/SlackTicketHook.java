@@ -246,6 +246,12 @@ public class SlackTicketHook extends TicketHook {
      * @return true if the ticket should be posted to a Slack channel
      */
     protected boolean shallPost(TicketModel ticket) {
+    	IRuntimeManager runtimeManager = GitblitContext.getManager(IRuntimeManager.class);
+    	boolean shallPostTicket = runtimeManager.getSettings().getBoolean(Plugin.SETTING_POST_TICKETS, true);
+    	if (!shallPostTicket) {
+    		return false;
+    	}
+
 		IRepositoryManager repositoryManager = GitblitContext.getManager(IRepositoryManager.class);
 		RepositoryModel repository = repositoryManager.getRepositoryModel(ticket.repository);
 		boolean shallPostRepo = slacker.shallPost(repository);

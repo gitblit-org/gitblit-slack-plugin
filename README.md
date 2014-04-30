@@ -33,8 +33,15 @@ There a handful of additional optional settings:
     slack.defaultEmoji = 
     slack.allowUserPosts = false
     slack.postPersonalRepos = false
+    slack.postTickets = true
+    slack.postBranches = true
+    slack.postTags = true
 
-**NOTE:**
+#### slack.allowUserPosts
+
+*slack.allowUserPosts* allows users to send channel or direct messages from the command-line using the SSH command interface.
+
+#### slack.useProjectChannels
 
 *slack.useProjectChannels* allows you to shard Gitblit activity by the repository project.  This may fit better with any security model you may have in place.  These channels *must* already exist in Slack, the plugin will not create them for you.
 
@@ -51,8 +58,10 @@ Examples:
 - For the *network/a/b/myrepo.git* repository, the slack channel would be *#gb_network*.
 - For the *test.git* repository, the slack channel would be *#gb*.
 
+
     slack.defaultChannel = 
     slack.useProjectChannels = true
+
 
 - For the *network/a/b/myrepo.git* repository, the slack channel would be *#network*.
 - For the *test.git* repository, the slack channel would be your default channel in Slack, likely *#general*.

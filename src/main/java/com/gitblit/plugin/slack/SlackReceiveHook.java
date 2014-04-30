@@ -77,13 +77,22 @@ public class SlackReceiveHook extends ReceiveHook {
 			return;
 		}
 
+    	IRuntimeManager runtimeManager = GitblitContext.getManager(IRuntimeManager.class);
 		try {
 			for (ReceiveCommand cmd : commands) {
 				RefType rType = null;
 				if (cmd.getRefName().startsWith(Constants.R_TAGS)) {
 					rType = RefType.TAG;
+			    	boolean shallPostTag = runtimeManager.getSettings().getBoolean(Plugin.SETTING_POST_TAGS, true);
+			    	if (!shallPostTag) {
+			    		continue;
+			    	}
 				} else if (cmd.getRefName().startsWith(Constants.R_HEADS)) {
 					rType = RefType.BRANCH;
+			    	boolean shallPostBranch = runtimeManager.getSettings().getBoolean(Plugin.SETTING_POST_BRANCHES, true);
+			    	if (!shallPostBranch) {
+			    		continue;
+			    	}
 				} else {
 					// ignore other refs
 					continue;
