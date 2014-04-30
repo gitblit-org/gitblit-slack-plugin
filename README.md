@@ -48,7 +48,7 @@ There a handful of additional optional settings:
 How are project channels named?
 
 1. if *slack.defaultChannel* is **empty**, the channel name is the first directory element of the repository path, unless there is no first directory element in which case activity will be posted to the default configured channel in Slack.
-2. if *slack.defaultChannel* is **non-empty**, the channel name is *slack.defaultChannel* _project, where *project* is the first directory element of the repository path.  If *project* is empty, the *slack.defaultChannel* is used.
+2. if *slack.defaultChannel* is **non-empty**, the channel name is *slack.defaultChannel* -project, where *project* is the first directory element of the repository path.  If *project* is empty, the *slack.defaultChannel* is used.
 
 Examples:
 
@@ -57,7 +57,7 @@ slack.defaultChannel = gb
 slack.useProjectChannels = true
 </pre>
 
-- For the *network/a/b/myrepo.git* repository, the slack channel would be *#gb_network*.
+- For the *network/a/b/myrepo.git* repository, the slack channel would be *#gb-network*.
 - For the *test.git* repository, the slack channel would be *#gb*.
 
 <pre>

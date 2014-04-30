@@ -122,7 +122,7 @@ public class Slacker {
 
 		String defaultChannel = runtimeManager.getSettings().getString(Plugin.SETTING_DEFAULT_CHANNEL, null);
 		if (!StringUtils.isEmpty(defaultChannel)) {
-			payload.setChannel(defaultChannel + "_" + project);
+			payload.setChannel(defaultChannel + "-" + project);
 		}
 		payload.setChannel(project);
 	}
