@@ -1,0 +1,245 @@
+/*
+ * Copyright 2014 gitblit.com.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.gitblit.plugin.slack;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinTask;
+
+import org.apache.http.NameValuePair;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.params.AllClientPNames;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.params.CoreProtocolPNames;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.gitblit.Constants;
+import com.gitblit.manager.IRuntimeManager;
+import com.gitblit.models.RepositoryModel;
+import com.gitblit.plugin.slack.entity.Payload;
+import com.gitblit.utils.StringUtils;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+/**
+ * Configures the final payload and sends a Slack message.
+ *
+ * @author James Moger
+ *
+ */
+public class Slacker {
+
+	private static Slacker instance;
+
+	final Logger log = LoggerFactory.getLogger(getClass());
+
+	final IRuntimeManager runtimeManager;
+
+	final ForkJoinPool taskPool;
+
+	public static void init(IRuntimeManager manager) {
+		if (instance == null) {
+			instance = new Slacker(manager);
+		}
+	}
+
+	public static Slacker instance() {
+		return instance;
+	}
+
+	Slacker(IRuntimeManager runtimeManager) {
+		this.runtimeManager = runtimeManager;
+		this.taskPool = new ForkJoinPool(4);
+	}
+
+	/**
+	 * Returns true if the repository can be posted to Slack.
+	 *
+	 * @param repository
+	 * @return true if the repository can be posted to Slack
+	 */
+	public boolean shallPost(RepositoryModel repository) {
+		boolean postPersonalRepos = runtimeManager.getSettings().getBoolean(Plugin.SETTING_POST_PERSONAL_REPOS, false);
+		if (repository.isPersonalRepository() && !postPersonalRepos) {
+			return false;
+		}
+		return true;
+	}
+
+	public String getURL() throws IOException {
+		String team = runtimeManager.getSettings().getString(Plugin.SETTING_TEAM, null);
+		if (StringUtils.isEmpty(team)) {
+			throw new IOException(String.format("Could not send message to Slack because '%s' is not defined!", Plugin.SETTING_TEAM));
+		}
+
+		String token = runtimeManager.getSettings().getString(Plugin.SETTING_TOKEN, null);
+		if (StringUtils.isEmpty(token)) {
+			throw new IOException(String.format("Could not send message to Slack because '%s' is not defined!", Plugin.SETTING_TOKEN));
+		}
+
+		String hook = runtimeManager.getSettings().getString(Plugin.SETTING_HOOK, "incoming-webhook");
+		if (StringUtils.isEmpty(hook)) {
+			hook = "incoming-webhook";
+		}
+
+		return String.format("https://%s.slack.com/services/hooks/%s?token=%s", team.toLowerCase(), hook, token);
+	}
+
+	/**
+	 * Optionally sets the channel of the payload to a project channel.
+	 *
+	 * @param project
+	 * @param payload
+	 */
+	public void setProjectChannel(String project, Payload payload) {
+		boolean useProjectChannels = runtimeManager.getSettings().getBoolean(Plugin.SETTING_USE_PROJECT_CHANNELS, false);
+		if (!useProjectChannels) {
+			return;
+		}
+
+		if (StringUtils.isEmpty(project)) {
+			return;
+		}
+
+		String defaultChannel = runtimeManager.getSettings().getString(Plugin.SETTING_DEFAULT_CHANNEL, null);
+		if (!StringUtils.isEmpty(defaultChannel)) {
+			payload.setChannel(defaultChannel + "_" + project);
+		}
+		payload.setChannel(project);
+	}
+
+	/**
+	 * Asynchronously send a simple text message.
+	 *
+	 * @param message
+	 * @throws IOException
+	 */
+	public void sendAsync(String message) {
+		sendAsync(new Payload(message));
+	}
+
+	/**
+	 * Asynchronously send a payload message.
+	 *
+	 * @param payload
+	 * @throws IOException
+	 */
+	public void sendAsync(final Payload payload) {
+		taskPool.invoke(new SlackerTask(this, payload));
+	}
+
+	/**
+	 * Send a simple text message.
+	 *
+	 * @param message
+	 * @throws IOException
+	 */
+	public void send(String message) throws IOException  {
+		send(new Payload(message));
+	}
+
+	/**
+	 * Send a payload message.
+	 *
+	 * @param payload
+	 * @throws IOException
+	 */
+	public void send(Payload payload) throws IOException {
+		String slackUrl = getURL();
+
+		payload.setUnfurlLinks(true);
+		payload.setUsername(Constants.NAME);
+
+		String defaultChannel = runtimeManager.getSettings().getString(Plugin.SETTING_DEFAULT_CHANNEL, null);
+		if (!StringUtils.isEmpty(defaultChannel) && StringUtils.isEmpty(payload.getChannel())) {
+			// specify the default channel
+			if (defaultChannel.charAt(0) != '#' && defaultChannel.charAt(0) != '@') {
+				defaultChannel = "#" + defaultChannel;
+			}
+			// channels must be lowercase
+			payload.setChannel(defaultChannel.toLowerCase());
+		}
+
+		String defaultEmoji = runtimeManager.getSettings().getString(Plugin.SETTING_DEFAULT_EMOJI, null);
+		if (!StringUtils.isEmpty(defaultEmoji)) {
+			if (StringUtils.isEmpty(payload.getIconEmoji()) && StringUtils.isEmpty(payload.getIconUrl())) {
+				// specify the default emoji
+				payload.setIconEmoji(defaultEmoji);
+			}
+		}
+
+		Gson gson = new GsonBuilder().create();
+
+		HttpClient client = new DefaultHttpClient();
+		HttpPost post = new HttpPost(slackUrl);
+		post.getParams().setParameter(CoreProtocolPNames.USER_AGENT,
+				Constants.NAME + "/" + Constants.getVersion());
+		post.getParams().setParameter(CoreProtocolPNames.HTTP_CONTENT_CHARSET, "UTF-8");
+
+		client.getParams().setParameter(AllClientPNames.CONNECTION_TIMEOUT, 5000);
+		client.getParams().setParameter(AllClientPNames.SO_TIMEOUT, 5000);
+
+		List<NameValuePair> nvps = new ArrayList<NameValuePair>(1);
+		nvps.add(new BasicNameValuePair("payload",gson.toJson(payload)));
+
+		post.setEntity(new UrlEncodedFormEntity(nvps, "UTF-8"));
+
+		client.execute(post);
+
+		// replace this with post.closeConnection() after JGit updates to HttpClient 4.2
+		post.abort();
+	}
+
+	private static class SlackerTask extends ForkJoinTask<Void> {
+
+		private static final long serialVersionUID = 1L;
+
+		final Logger log = LoggerFactory.getLogger(getClass());
+		final Slacker slacker;
+		final Payload payload;
+
+		public SlackerTask(Slacker slacker, Payload payload) {
+			this.slacker = slacker;
+			this.payload = payload;
+		}
+
+		@Override
+		public Void getRawResult() {
+			return null;
+		}
+
+		@Override
+		protected void setRawResult(Void value) {
+		}
+
+		@Override
+		protected boolean exec() {
+			try {
+				slacker.send(payload);
+				return true;
+			} catch (IOException e) {
+				log.error("Failed to send asynchronously to Slack!", e);
+			}
+			return false;
+		}
+	}
+}
