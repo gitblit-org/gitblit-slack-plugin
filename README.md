@@ -52,16 +52,18 @@ How are project channels named?
 
 Examples:
 
-    slack.defaultChannel = gb
-    slack.useProjectChannels = true
+<pre>
+slack.defaultChannel = gb
+slack.useProjectChannels = true
+</pre>
 
 - For the *network/a/b/myrepo.git* repository, the slack channel would be *#gb_network*.
 - For the *test.git* repository, the slack channel would be *#gb*.
 
-
-    slack.defaultChannel = 
-    slack.useProjectChannels = true
-
+<pre>
+slack.defaultChannel = 
+slack.useProjectChannels = true
+</pre>
 
 - For the *network/a/b/myrepo.git* repository, the slack channel would be *#network*.
 - For the *test.git* repository, the slack channel would be your default channel in Slack, likely *#general*.
