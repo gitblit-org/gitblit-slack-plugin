@@ -4,6 +4,8 @@
 
 The Gitblit Slack plugin provides realtime integration for your Slack team.  The plugin inject events into a channel for branch or tag changes and ticket changes.
 
+![example](example.png "Example integration")
+
 ### Installation
 
 This plugin is referenced in the Gitblit Plugin Registry and you may install it using SSH with an administrator account.
