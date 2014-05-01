@@ -33,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.gitblit.Constants;
+import com.gitblit.manager.IManager;
 import com.gitblit.manager.IRuntimeManager;
 import com.gitblit.models.RepositoryModel;
 import com.gitblit.plugin.slack.entity.Payload;
@@ -46,7 +47,7 @@ import com.google.gson.GsonBuilder;
  * @author James Moger
  *
  */
-public class Slacker {
+public class Slacker implements IManager {
 
 	private static Slacker instance;
 
@@ -69,6 +70,17 @@ public class Slacker {
 	Slacker(IRuntimeManager runtimeManager) {
 		this.runtimeManager = runtimeManager;
 		this.taskPool = new ForkJoinPool(4);
+	}
+
+	@Override
+	public Slacker start() {
+		return this;
+	}
+
+	@Override
+	public Slacker stop() {
+		this.taskPool.shutdown();
+		return this;
 	}
 
 	/**

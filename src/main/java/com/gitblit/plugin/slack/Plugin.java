@@ -60,6 +60,7 @@ public class Plugin extends GitblitPlugin {
 
 	@Override
 	public void stop() {
+		Slacker.instance().stop();
 		log.debug("{} STOPPED.", getWrapper().getPluginId());
 	}
 
