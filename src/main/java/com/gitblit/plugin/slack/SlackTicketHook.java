@@ -198,6 +198,7 @@ public class SlackTicketHook extends TicketHook {
     		}
     	}
 
+    	String pretext = ticket.title;
     	String text = null;
     	String color = null;
     	if (change.isStatusChange()) {
@@ -208,7 +209,7 @@ public class SlackTicketHook extends TicketHook {
     		case Invalid:
     		case Wontfix:
     		case Duplicate:
-    			color= "danger";
+    			color = "danger";
     			break;
     		case On_Hold:
     			color = "warning";
@@ -220,7 +221,7 @@ public class SlackTicketHook extends TicketHook {
     			color = "good";
     			break;
     		case New:
-    			text = ticket.body;
+    			pretext = null;
     		default:
     			color = null;
     		}
@@ -233,13 +234,21 @@ public class SlackTicketHook extends TicketHook {
     	List<TicketModel.Field> fields = new ArrayList<TicketModel.Field>(filtered.keySet());
     	Collections.sort(fields);
     	Attachment attachment = Attachment.instance(ticket.title)
-    			.pretext(ticket.title)
+    			.pretext(pretext)
     			.color(color)
     			.text(text);
     	if (fields.size() > 0) {
     		for (TicketModel.Field field : fields) {
     			boolean isShort = TicketModel.Field.title != field && TicketModel.Field.body != field;
-    			attachment.addField(Field.instance(field.toString(), change.getField(field)).isShort(isShort));
+    			String value;
+				if (change.getField(field) == null) {
+					continue;
+				} else {
+					value = change.getField(field);
+				}
+    			if (!StringUtils.isEmpty(value)) {
+    				attachment.addField(Field.instance(field.toString(), value).isShort(isShort));
+    			}
     		}
     	}
     	return attachment;

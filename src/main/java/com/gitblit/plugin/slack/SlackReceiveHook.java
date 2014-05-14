@@ -16,7 +16,9 @@
 package com.gitblit.plugin.slack;
 import java.io.IOException;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -141,10 +143,10 @@ public class SlackReceiveHook extends ReceiveHook {
 		RepositoryModel repo = receivePack.getRepositoryModel();
 		String shortRef = Repository.shortenRefName(cmd.getRefName());
 		String repoUrl = getUrl(repo.name, null, null);
-		String url = getUrl(repo.name, null, cmd.getNewId().getName());
+		String logUrl = getUrl(repo.name, shortRef, null);
 
 		String msg = String.format("*%s* has created %s <%s|%s> in <%s|%s>", user.getDisplayName(),
-    			rType.name().toLowerCase(), url, shortRef, repoUrl, StringUtils.stripDotGit(repo.name));
+    			rType.name().toLowerCase(), logUrl, shortRef, repoUrl, StringUtils.stripDotGit(repo.name));
 
     	Payload payload = Payload.instance(msg);
     	slacker.setChannel(repo, payload);
@@ -165,21 +167,23 @@ public class SlackReceiveHook extends ReceiveHook {
 		String shortRef = Repository.shortenRefName(cmd.getRefName());
 		String repoUrl = getUrl(repo.name, null, null);
 
+		List<RevCommit> commits = null;
 		String action;
 		String url;
 		switch (rType) {
 		case TAG:
-			url = getUrl(repo.name, null, cmd.getNewId().getName());
+			url = getUrl(repo.name, null, shortRef);
 			action = "*MOVED* tag";
 			break;
 		default:
-			url = getUrl(repo.name, cmd.getOldId().getName(), cmd.getNewId().getName());
+			// log url
+			url = getUrl(repo.name, shortRef, null);
 			if (isFF) {
-				int commits = countCommits(receivePack, cmd.getOldId().name(), cmd.getNewId().name());
-				if (commits == 1) {
+				commits = getCommits(receivePack, cmd.getOldId().name(), cmd.getNewId().name());
+				if (commits.size() == 1) {
 					action = "pushed 1 commit to";
 				} else {
-					action = String.format("pushed %d commits to", commits);
+					action = String.format("pushed %d commits to", commits.size());
 				}
 			} else {
 				action = "*REWRITTEN*";
@@ -187,10 +191,45 @@ public class SlackReceiveHook extends ReceiveHook {
 			break;
 		}
 
+		StringBuilder sb = new StringBuilder();
 		String msg = String.format("*%s* has %s <%s|%s> in <%s|%s>", user.getDisplayName(), action,
 				 url, shortRef, repoUrl, StringUtils.stripDotGit(repo.name));
+		sb.append(msg);
 
-    	Payload payload = Payload.instance(msg);
+		if (commits != null) {
+			// abbreviated commit list
+			sb.append("\n\n");
+			int shortIdLen = receivePack.getGitblit().getSettings().getInteger(Keys.web.shortCommitIdLength, 6);
+			int maxCommits = 5;
+			for (int i = 0; i < Math.min(maxCommits, commits.size()); i++) {
+				RevCommit commit = commits.get(i);
+				String commitUrl = getUrl(repo.name, null, commit.getName());
+				String shortId = commit.getName().substring(0, shortIdLen);
+				String shortMessage = StringUtils.trimString(commit.getShortMessage(), Constants.LEN_SHORTLOG);
+				String row = String.format("<%s|`%s`> %s\n",
+						commitUrl, shortId, shortMessage);
+				sb.append(row);
+			}
+
+			// compare link
+			if (commits.size() > 1) {
+				String compareUrl = getUrl(repo.name, cmd.getOldId().getName(), cmd.getNewId().getName());
+				String compareText;
+				if (commits.size() > maxCommits) {
+					int diff = commits.size() - maxCommits;
+					if (diff == 1) {
+						compareText = "1 more commit";
+					} else {
+						compareText = String.format("%d more commits", diff);
+					}
+				} else {
+					compareText = String.format("view comparison of these %s commits", commits.size());
+				}
+				sb.append(String.format("<%s|%s>", compareUrl, compareText));
+			}
+		}
+
+    	Payload payload = Payload.instance(sb.toString());
     	slacker.setChannel(repo, payload);
     	slacker.sendAsync(payload);
 	}
@@ -234,6 +273,10 @@ public class SlackReceiveHook extends ReceiveHook {
 			// create
 			final String hrefPattern = "{0}/commit?r={1}&h={2}";
 			return MessageFormat.format(hrefPattern, canonicalUrl, repo, newId);
+		} else if (oldId != null && newId == null) {
+			// log
+			final String hrefPattern = "{0}/log?r={1}&h={2}";
+			return MessageFormat.format(hrefPattern, canonicalUrl, repo, oldId);
 		} else if (oldId != null && newId != null) {
 			// update/compare
 			final String hrefPattern = "{0}/compare?r={1}&h={2}..{3}";
@@ -247,8 +290,8 @@ public class SlackReceiveHook extends ReceiveHook {
 		return null;
     }
 
-    private int countCommits(GitblitReceivePack receivePack, String baseId, String tipId) {
-		int count = 0;
+    private List<RevCommit> getCommits(GitblitReceivePack receivePack, String baseId, String tipId) {
+    	List<RevCommit> list = new ArrayList<RevCommit>();
 		RevWalk walk = receivePack.getRevWalk();
 		walk.reset();
 		walk.sort(RevSort.TOPO);
@@ -263,16 +306,15 @@ public class SlackReceiveHook extends ReceiveHook {
 				if (c == null) {
 					break;
 				}
-				count++;
+				list.add(c);
 			}
 		} catch (IOException e) {
 			// Should never happen, the core receive process would have
 			// identified the missing object earlier before we got control.
-			log.error("failed to get commit count", e);
-			return 0;
+			log.error("failed to get commits", e);
 		} finally {
 			walk.release();
 		}
-		return count;
+		return list;
 	}
 }
