@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import ro.fortsoft.pf4j.Extension;
 
+import com.gitblit.IStoredSettings;
 import com.gitblit.extensions.TicketHook;
 import com.gitblit.manager.IGitblit;
 import com.gitblit.manager.IRepositoryManager;
@@ -58,12 +59,16 @@ public class SlackTicketHook extends TicketHook {
 
 	final Slacker slacker;
 
+	final IStoredSettings settings;
+
 	public SlackTicketHook() {
 		super();
 
 		IRuntimeManager runtimeManager = GitblitContext.getManager(IRuntimeManager.class);
 		Slacker.init(runtimeManager);
     	slacker = Slacker.instance();
+
+    	settings = runtimeManager.getSettings();
 	}
 
     @Override
@@ -160,7 +165,7 @@ public class SlackTicketHook extends TicketHook {
 			 * Status Change
 			 */
 			msg = String.format("%s has changed the status of %s %s", author, repo, url);
-		} else if (change.hasComment()) {
+		} else if (change.hasComment() && settings.getBoolean(Plugin.SETTING_POST_TICKET_COMMENTS, true)) {
 			/*
 			 * Comment
 			 */
@@ -218,7 +223,7 @@ public class SlackTicketHook extends TicketHook {
     		default:
     			color = null;
     		}
-    	} else if (change.hasComment()) {
+    	} else if (change.hasComment() && settings.getBoolean(Plugin.SETTING_POST_TICKET_COMMENTS, true)) {
     		// comment
     		text = change.comment.text;
     	}

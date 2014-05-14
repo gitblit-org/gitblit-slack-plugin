@@ -36,6 +36,7 @@ There a handful of additional optional settings:
     slack.allowUserPosts = false
     slack.postPersonalRepos = false
     slack.postTickets = true
+    slack.postTicketComments = true
     slack.postBranches = true
     slack.postTags = true
 

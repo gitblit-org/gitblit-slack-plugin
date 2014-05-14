@@ -42,6 +42,8 @@ public class Plugin extends GitblitPlugin {
 
 	public static final String SETTING_POST_TICKETS = "slack.postTickets";
 
+	public static final String SETTING_POST_TICKET_COMMENTS = "slack.postTicketComments";
+
 	public static final String SETTING_POST_BRANCHES = "slack.postBranches";
 
 	public static final String SETTING_POST_TAGS = "slack.postTags";
