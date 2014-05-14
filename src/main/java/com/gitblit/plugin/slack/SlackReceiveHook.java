@@ -147,7 +147,7 @@ public class SlackReceiveHook extends ReceiveHook {
     			rType.name().toLowerCase(), url, shortRef, repoUrl, StringUtils.stripDotGit(repo.name));
 
     	Payload payload = Payload.instance(msg);
-    	slacker.setProjectChannel(repo.projectPath, payload);
+    	slacker.setChannel(repo, payload);
     	slacker.sendAsync(payload);
     }
 
@@ -191,7 +191,7 @@ public class SlackReceiveHook extends ReceiveHook {
 				 url, shortRef, repoUrl, StringUtils.stripDotGit(repo.name));
 
     	Payload payload = Payload.instance(msg);
-    	slacker.setProjectChannel(repo.projectPath, payload);
+    	slacker.setChannel(repo, payload);
     	slacker.sendAsync(payload);
 	}
 
@@ -212,7 +212,7 @@ public class SlackReceiveHook extends ReceiveHook {
     			rType.name().toLowerCase(), shortRef, repoUrl, StringUtils.stripDotGit(repo.name));
 
     	Payload payload = Payload.instance(msg);
-    	slacker.setProjectChannel(repo.projectPath, payload);
+    	slacker.setChannel(repo, payload);
     	slacker.sendAsync(payload);
 	}
 

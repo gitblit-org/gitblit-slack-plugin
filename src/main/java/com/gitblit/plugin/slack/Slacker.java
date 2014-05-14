@@ -117,26 +117,27 @@ public class Slacker implements IManager {
 	}
 
 	/**
-	 * Optionally sets the channel of the payload to a project channel.
+	 * Optionally sets the channel of the payload based on the repository.
 	 *
-	 * @param project
+	 * @param repository
 	 * @param payload
 	 */
-	public void setProjectChannel(String project, Payload payload) {
+	public void setChannel(RepositoryModel repository, Payload payload) {
 		boolean useProjectChannels = runtimeManager.getSettings().getBoolean(Plugin.SETTING_USE_PROJECT_CHANNELS, false);
 		if (!useProjectChannels) {
 			return;
 		}
 
-		if (StringUtils.isEmpty(project)) {
+		if (StringUtils.isEmpty(repository.projectPath)) {
 			return;
 		}
 
 		String defaultChannel = runtimeManager.getSettings().getString(Plugin.SETTING_DEFAULT_CHANNEL, null);
 		if (!StringUtils.isEmpty(defaultChannel)) {
-			payload.setChannel(defaultChannel + "-" + project);
+			payload.setChannel(defaultChannel + "-" + repository.projectPath);
+		} else {
+			payload.setChannel(repository.projectPath);
 		}
-		payload.setChannel(project);
 	}
 
 	/**

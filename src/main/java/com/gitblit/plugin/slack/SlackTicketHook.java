@@ -181,8 +181,9 @@ public class SlackTicketHook extends TicketHook {
 				.iconEmoji(emoji)
 				.attachments(fields(ticket, change, fieldExclusions));
 
-   		String project = StringUtils.getRootPath(ticket.repository);
-   		slacker.setProjectChannel(project, payload);
+		IRepositoryManager repositoryManager = GitblitContext.getManager(IRepositoryManager.class);
+		RepositoryModel repository = repositoryManager.getRepositoryModel(ticket.repository);
+   		slacker.setChannel(repository, payload);
    		slacker.sendAsync(payload);
     }
 
