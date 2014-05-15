@@ -2,6 +2,7 @@
 
 ### 1.2.0
 
+- Improve ticket branch push logging by listing up to 5 commits and linking to the compare pages.
 - Switch to a cached thread pool
 
 ### 1.1.0
