@@ -1,5 +1,9 @@
 ## Gitblit Slack plugin
 
+### 1.2.0
+
+- Switch to a cached thread pool
+
 ### 1.1.0
 
 - Improve push logging by listing up to 5 commits per push and linking to the log & compare pages.  This now feels more like the Gitblit reflog.

@@ -16,10 +16,12 @@
 package com.gitblit.plugin.slack;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinTask;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
@@ -55,7 +57,7 @@ public class Slacker implements IManager {
 
 	final IRuntimeManager runtimeManager;
 
-	final ForkJoinPool taskPool;
+	final ExecutorService taskPool;
 
 	public static void init(IRuntimeManager manager) {
 		if (instance == null) {
@@ -69,7 +71,7 @@ public class Slacker implements IManager {
 
 	Slacker(IRuntimeManager runtimeManager) {
 		this.runtimeManager = runtimeManager;
-		this.taskPool = new ForkJoinPool(4);
+		this.taskPool = Executors.newCachedThreadPool();
 	}
 
 	@Override
@@ -157,7 +159,7 @@ public class Slacker implements IManager {
 	 * @throws IOException
 	 */
 	public void sendAsync(final Payload payload) {
-		taskPool.invoke(new SlackerTask(this, payload));
+		taskPool.submit(new SlackerTask(this, payload));
 	}
 
 	/**
@@ -222,7 +224,7 @@ public class Slacker implements IManager {
 		post.abort();
 	}
 
-	private static class SlackerTask extends ForkJoinTask<Void> {
+	private static class SlackerTask implements Serializable, Callable<Boolean> {
 
 		private static final long serialVersionUID = 1L;
 
@@ -236,16 +238,7 @@ public class Slacker implements IManager {
 		}
 
 		@Override
-		public Void getRawResult() {
-			return null;
-		}
-
-		@Override
-		protected void setRawResult(Void value) {
-		}
-
-		@Override
-		protected boolean exec() {
+		public Boolean call() throws Exception {
 			try {
 				slacker.send(payload);
 				return true;
