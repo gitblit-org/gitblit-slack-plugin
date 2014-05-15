@@ -161,7 +161,8 @@ public class SlackTicketHook extends TicketHook {
 					/*
 					 * Rewritten patchset
 					 */
-					leadIn = String.format("%s has rewritten the patchset for %s %s (%s)", author, repo, url, change.patchset.type);
+					leadIn = String.format("%s has rewritten the patchset for %s %s (%s)",
+							author, repo, url, change.patchset.type);
 				}
 				base = change.patchset.base;
 			} else {
@@ -206,6 +207,7 @@ public class SlackTicketHook extends TicketHook {
 				} else {
 					compareText = String.format("view comparison of these %s commits", commits.size());
 				}
+				sb.append("\n");
 				sb.append(String.format("<%s|%s>", compareUrl, compareText));
 			}
 
@@ -256,16 +258,6 @@ public class SlackTicketHook extends TicketHook {
     	// ensure we have some basic context fields
     	if (!filtered.containsKey(TicketModel.Field.title)) {
     		filtered.put(TicketModel.Field.title, ticket.title);
-    	}
-    	if (!filtered.containsKey(TicketModel.Field.responsible)) {
-    		if (!StringUtils.isEmpty(ticket.responsible)) {
-    			filtered.put(TicketModel.Field.responsible, ticket.responsible);
-    		}
-    	}
-    	if (!filtered.containsKey(TicketModel.Field.milestone)) {
-    		if (!StringUtils.isEmpty(ticket.milestone)) {
-    			filtered.put(TicketModel.Field.milestone, ticket.milestone);
-    		}
     	}
 
     	String text = null;
