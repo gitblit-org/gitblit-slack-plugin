@@ -320,6 +320,9 @@ public class SlackTicketHook extends TicketHook {
     				} else if (TicketModel.Field.topic == field) {
     					// TODO link bugtraq matches
     					// value = renderBugtraq(value, ticket.repository);
+    				} else if (TicketModel.Field.responsible == field) {
+    					// lookup display name of the user
+    					value = getDisplayName(value);
     				}
 
     				if (!StringUtils.isEmpty(value)) {
@@ -360,6 +363,22 @@ public class SlackTicketHook extends TicketHook {
 			db.close();
 		}
 		return value;
+    }
+
+    protected String getDisplayName(String username) {
+    	if (StringUtils.isEmpty(username)) {
+    		return username;
+    	}
+
+		IUserManager userManager = GitblitContext.getManager(IUserManager.class);
+		UserModel user = userManager.getUserModel(username);
+		if (user != null) {
+			String displayName = user.getDisplayName();
+			if (!StringUtils.isEmpty(displayName) && !username.equals(displayName)) {
+				return displayName;
+			}
+		}
+		return username;
     }
 
     /**
