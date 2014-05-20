@@ -15,7 +15,6 @@
  */
 package com.gitblit.plugin.slack;
 import static org.pegdown.Extensions.ALL;
-import static org.pegdown.Extensions.FENCED_CODE_BLOCKS;
 import static org.pegdown.Extensions.SMARTYPANTS;
 
 import java.io.IOException;
@@ -335,17 +334,34 @@ public class SlackTicketHook extends TicketHook {
     		return markdown;
     	}
 
-    	String markup = markdown;
     	try {
-			PegDownProcessor pd = new PegDownProcessor(ALL & ~SMARTYPANTS & ~FENCED_CODE_BLOCKS);
-			RootNode astRoot = pd.parseMarkdown(markdown.toCharArray());
-			markup = new SlackMarkupSerializer().toHtml(astRoot);
+    		IRuntimeManager runtimeManager = GitblitContext.getManager(IRuntimeManager.class);
+    		String canonicalUrl = runtimeManager.getSettings().getString(Keys.web.canonicalUrl, "https://localhost:8443");
+
+    		// emphasize and link mentions
+    		String mentionReplacement = String.format(" **[@$1](%1s/user/$1)**", canonicalUrl);
+    		String text = markdown.replaceAll("\\s@([A-Za-z0-9-_]+)", mentionReplacement);
+
+    		// link ticket refs
+    		String ticketReplacement = MessageFormat.format("$1[#$2]({0}/tickets?r={1}&h=$2)$3", canonicalUrl, repository);
+    		text = text.replaceAll("([\\s,]+)#(\\d+)([\\s,:\\.\\n])", ticketReplacement);
+
+    		// link commit shas
+    		int shaLen = settings.getInteger(Keys.web.shortCommitIdLength, 6);
+    		String commitPattern = MessageFormat.format("\\s([A-Fa-f0-9]'{'{0}'}')([A-Fa-f0-9]'{'{1}'}')", shaLen, 40 - shaLen);
+    		String commitReplacement = String.format(" [`$1`](%1$s/commit\\?r=%2$s&h=$1$2)", canonicalUrl, repository);
+    		text = text.replaceAll(commitPattern, commitReplacement);
+
+			PegDownProcessor pd = new PegDownProcessor(ALL & ~SMARTYPANTS);
+			RootNode astRoot = pd.parseMarkdown(text.toCharArray());
+			String slackMarkup = new SlackMarkupSerializer().toHtml(astRoot);
+			slackMarkup = slackMarkup.replace("<pre><code>", "```\n");
+			slackMarkup = slackMarkup.replace("</code></pre>", "```\n");
+			return slackMarkup;
 		} catch (ParsingTimeoutException e) {
 			log.error(null, e);
 			return markdown;
 		}
-
-		return markup;
     }
 
     protected String getDisplayName(String username) {
