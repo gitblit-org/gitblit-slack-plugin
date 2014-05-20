@@ -54,7 +54,7 @@ public class SlackDispatcher extends DispatchCommand {
 	})
 	public static class TestCommand extends SshCommand {
 
-		@Argument(index = 0, metaVar = "#CHANNEL|@USER", usage = "Channel to post message")
+		@Argument(index = 0, metaVar = "#CHANNEL|@USER", usage = "Destination Channel or User for message")
 		String channel;
 
 		/**
@@ -89,7 +89,7 @@ public class SlackDispatcher extends DispatchCommand {
 	})
 	public static class MessageCommand extends SshCommand {
 
-		@Argument(index = 0, metaVar = "#CHANNEL|@USER", usage = "Channel to post message")
+		@Argument(index = 0, metaVar = "#CHANNEL|@USER", usage = "Destination Channel or User for message")
 		String channel;
 
 		@Option(name = "--message", aliases = {"-m" }, metaVar = "-|MESSAGE", required = true)
