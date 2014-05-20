@@ -18,6 +18,8 @@ package com.gitblit.plugin.slack.entity;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 public class Attachment {
 	private String fallback;
@@ -25,10 +27,11 @@ public class Attachment {
 	private String pretext;
 	private String color;
 	private List<Field> fields;
-	
+	private Set<String> mrkdwn_in;
+
 	Attachment() {
 	}
-	
+
 	public Attachment(String fallback) {
 		this.fallback = fallback;
 	}
@@ -36,35 +39,35 @@ public class Attachment {
 	public static Attachment instance(String fallback) {
 		return new Attachment(fallback);
 	}
-	
+
 	public Attachment fallback(String fallback) {
 		setFallback(fallback);
 		return this;
 	}
-	
+
 	public Attachment text(String text) {
 		setText(text);
 		return this;
 	}
-	
+
 	public Attachment pretext(String pretext) {
 		setPretext(pretext);
 		return this;
 	}
-	
+
 	public Attachment color(String color) {
 		setColor(color);
 		return this;
 	}
-	
+
 	public Attachment fields(Field...fields) {
 		if (this.fields == null)
-			this.fields = new ArrayList<Field>(Arrays.asList(fields));
+			setFields(new ArrayList<Field>(Arrays.asList(fields)));
 		else
-			this.fields.addAll(Arrays.asList(fields));
+			setFields(Arrays.asList(fields));
 		return this;
 	}
-	
+
 	public String getFallback() {
 		return fallback;
 	}
@@ -102,12 +105,25 @@ public class Attachment {
 	}
 
 	public void addField(Field field) {
-		if (fields == null)
-			fields = new ArrayList<Field>(3);
+		if (fields == null) {
+			fields = new ArrayList<Field>();
+		}
 		fields.add(field);
+
+		if (field.isMrkdwn()) {
+			if (mrkdwn_in == null) {
+				mrkdwn_in = new TreeSet<String>();
+			}
+			mrkdwn_in.add("fields");
+		}
 	}
-	
+
 	public void setFields(List<Field> fields) {
-		this.fields = fields;
+		this.fields = null;
+		this.mrkdwn_in = null;
+
+		for (Field field : fields) {
+			addField(field);
+		}
 	}
 }

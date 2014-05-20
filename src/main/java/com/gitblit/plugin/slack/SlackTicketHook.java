@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 package com.gitblit.plugin.slack;
+import static org.pegdown.Extensions.ALL;
+import static org.pegdown.Extensions.FENCED_CODE_BLOCKS;
+import static org.pegdown.Extensions.SMARTYPANTS;
+
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -29,6 +33,9 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevSort;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.pegdown.ParsingTimeoutException;
+import org.pegdown.PegDownProcessor;
+import org.pegdown.ast.RootNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,8 +58,6 @@ import com.gitblit.plugin.slack.entity.Attachment;
 import com.gitblit.plugin.slack.entity.Field;
 import com.gitblit.plugin.slack.entity.Payload;
 import com.gitblit.servlet.GitblitContext;
-import com.gitblit.utils.BugtraqProcessor;
-import com.gitblit.utils.MarkdownUtils;
 import com.gitblit.utils.StringUtils;
 
 /**
@@ -299,6 +304,7 @@ public class SlackTicketHook extends TicketHook {
     	if (fields.size() > 0) {
     		for (TicketModel.Field field : fields) {
     			boolean isShort = TicketModel.Field.title != field && TicketModel.Field.body != field;
+    			boolean isMrkdwn = false;
     			String value;
     			if (change.getField(field) == null) {
     				continue;
@@ -307,18 +313,16 @@ public class SlackTicketHook extends TicketHook {
     				value = filtered.get(field);
 
     				if (TicketModel.Field.body == field) {
-    					// TODO transform the body to html
-    					// value = renderMarkdown(value, ticket.repository);
-    				} else if (TicketModel.Field.topic == field) {
-    					// TODO link bugtraq matches
-    					// value = renderBugtraq(value, ticket.repository);
+    					// transform the body to Slack markup
+    					value = renderMarkdown(value, ticket.repository);
+    					isMrkdwn = true;
     				} else if (TicketModel.Field.responsible == field) {
     					// lookup display name of the user
     					value = getDisplayName(value);
     				}
 
     				if (!StringUtils.isEmpty(value)) {
-    					attachment.addField(Field.instance(field.toString(), value).isShort(isShort));
+    					attachment.addField(Field.instance(field.toString(), value).isShort(isShort).isMrkdwn(isMrkdwn));
     				}
     			}
     		}
@@ -331,30 +335,17 @@ public class SlackTicketHook extends TicketHook {
     		return markdown;
     	}
 
-		// transform the body to html
-    	String bugtraq = renderBugtraq(markdown, repository);
-		String html = MarkdownUtils.transformGFM(settings, bugtraq, repository);
-
-		// strip paragraph tags
-		html = html.replace("<p>", "");
-		html = html.replace("</p>", "<br/><br/>");
-		return html;
-    }
-
-    protected String renderBugtraq(String value, String repository) {
-    	if (StringUtils.isEmpty(value)) {
-    		return value;
-    	}
-
-    	IRepositoryManager repositoryManager = GitblitContext.getManager(IRepositoryManager.class);
-		Repository db = repositoryManager.getRepository(repository);
-		try {
-			BugtraqProcessor bugtraq = new BugtraqProcessor(settings);
-			value = bugtraq.processPlainCommitMessage(db, repository, value);
-		} finally {
-			db.close();
+    	String markup = markdown;
+    	try {
+			PegDownProcessor pd = new PegDownProcessor(ALL & ~SMARTYPANTS & ~FENCED_CODE_BLOCKS);
+			RootNode astRoot = pd.parseMarkdown(markdown.toCharArray());
+			markup = new SlackMarkupSerializer().toHtml(astRoot);
+		} catch (ParsingTimeoutException e) {
+			log.error(null, e);
+			return markdown;
 		}
-		return value;
+
+		return markup;
     }
 
     protected String getDisplayName(String username) {

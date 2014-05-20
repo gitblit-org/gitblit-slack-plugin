@@ -22,6 +22,7 @@ public class Field {
 	private String value;
 	@SerializedName("short")
 	private boolean isShort;
+	private transient boolean isMrkdwn;
 
 	Field() {
 	}
@@ -63,6 +64,11 @@ public class Field {
 		return this;
 	}
 
+	public Field isMrkdwn(boolean isMrkdwn) {
+		setMrkdwn(isMrkdwn);
+		return this;
+	}
+
 	public String getTitle() {
 		return title;
 	}
@@ -86,4 +92,13 @@ public class Field {
 	public void setShort(boolean isShort) {
 		this.isShort = isShort;
 	}
+
+	public boolean isMrkdwn() {
+		return isMrkdwn;
+	}
+
+	public void setMrkdwn(boolean isMrkdwn) {
+		this.isMrkdwn = isMrkdwn;
+	}
+
 }

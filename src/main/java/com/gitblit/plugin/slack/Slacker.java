@@ -203,6 +203,8 @@ public class Slacker implements IManager {
 		}
 
 		Gson gson = new GsonBuilder().create();
+		String json = gson.toJson(payload);
+		log.debug(json);
 
 		HttpClient client = new DefaultHttpClient();
 		HttpPost post = new HttpPost(slackUrl);
@@ -214,7 +216,7 @@ public class Slacker implements IManager {
 		client.getParams().setParameter(AllClientPNames.SO_TIMEOUT, 5000);
 
 		List<NameValuePair> nvps = new ArrayList<NameValuePair>(1);
-		nvps.add(new BasicNameValuePair("payload",gson.toJson(payload)));
+		nvps.add(new BasicNameValuePair("payload",json));
 
 		post.setEntity(new UrlEncodedFormEntity(nvps, "UTF-8"));
 
