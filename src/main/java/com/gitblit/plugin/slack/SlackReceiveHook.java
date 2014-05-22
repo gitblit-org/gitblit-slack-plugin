@@ -148,7 +148,10 @@ public class SlackReceiveHook extends ReceiveHook {
 		String msg = String.format("*%s* has created %s <%s|%s> in <%s|%s>", user.getDisplayName(),
     			rType.name().toLowerCase(), logUrl, shortRef, repoUrl, StringUtils.stripDotGit(repo.name));
 
-    	Payload payload = Payload.instance(msg);
+		IRuntimeManager runtimeManager = GitblitContext.getManager(IRuntimeManager.class);
+    	String emoji = runtimeManager.getSettings().getString(Plugin.SETTING_GIT_EMOJI, null);
+
+    	Payload payload = Payload.instance(msg).iconEmoji(emoji);
     	slacker.setChannel(repo, payload);
     	slacker.sendAsync(payload);
     }
@@ -229,7 +232,10 @@ public class SlackReceiveHook extends ReceiveHook {
 			}
 		}
 
-    	Payload payload = Payload.instance(sb.toString());
+		IRuntimeManager runtimeManager = GitblitContext.getManager(IRuntimeManager.class);
+    	String emoji = runtimeManager.getSettings().getString(Plugin.SETTING_GIT_EMOJI, null);
+
+    	Payload payload = Payload.instance(sb.toString()).iconEmoji(emoji);
     	slacker.setChannel(repo, payload);
     	slacker.sendAsync(payload);
 	}
@@ -250,7 +256,10 @@ public class SlackReceiveHook extends ReceiveHook {
 		String msg = String.format("*%s* has deleted %s *%s* from <%s|%s>", user.getDisplayName(),
     			rType.name().toLowerCase(), shortRef, repoUrl, StringUtils.stripDotGit(repo.name));
 
-    	Payload payload = Payload.instance(msg);
+		IRuntimeManager runtimeManager = GitblitContext.getManager(IRuntimeManager.class);
+    	String emoji = runtimeManager.getSettings().getString(Plugin.SETTING_GIT_EMOJI, null);
+
+    	Payload payload = Payload.instance(msg).iconEmoji(emoji);
     	slacker.setChannel(repo, payload);
     	slacker.sendAsync(payload);
 	}

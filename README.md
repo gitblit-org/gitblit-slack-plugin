@@ -33,6 +33,8 @@ There a handful of additional optional settings:
     slack.defaultChannel = general
     slack.useProjectChannels = false
     slack.defaultEmoji = 
+    slack.gitEmoji = 
+    slack.ticketEmoji = 
     slack.allowUserPosts = false
     slack.postPersonalRepos = false
     slack.postTickets = true

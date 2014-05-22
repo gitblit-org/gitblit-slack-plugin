@@ -103,7 +103,10 @@ public class SlackTicketHook extends TicketHook {
     	String msg = String.format("*%s* has created *%s* <%s|ticket-%s>", reporter.getDisplayName(),
     			StringUtils.stripDotGit(ticket.repository), getUrl(ticket), ticket.number);
 
+    	String emoji = settings.getString(Plugin.SETTING_TICKET_EMOJI, null);
+
     	Payload payload = Payload.instance(msg)
+    			.iconEmoji(emoji)
                 .attachments(fields(ticket, change, fieldExclusions));
 
    		slacker.sendAsync(payload);
@@ -124,7 +127,7 @@ public class SlackTicketHook extends TicketHook {
 		String url = String.format("<%s|ticket-%s>", getUrl(ticket), ticket.number);
 		String repo = "*" + StringUtils.stripDotGit(ticket.repository) + "*";
 		String msg = null;
-		String emoji = null;
+    	String emoji = settings.getString(Plugin.SETTING_TICKET_EMOJI, null);
 
 		if (change.hasReview()) {
 			/*

@@ -36,6 +36,10 @@ public class Plugin extends GitblitPlugin {
 
 	public static final String SETTING_DEFAULT_EMOJI = "slack.defaultEmoji";
 
+	public static final String SETTING_TICKET_EMOJI = "slack.ticketEmoji";
+
+	public static final String SETTING_GIT_EMOJI = "slack.gitEmoji";
+
 	public static final String SETTING_ALLOW_USER_POSTS = "slack.allowUserPosts";
 
 	public static final String SETTING_POST_PERSONAL_REPOS = "slack.postPersonalRepos";

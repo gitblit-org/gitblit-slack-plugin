@@ -2,6 +2,7 @@
 
 ### 1.2.0
 
+- Allow specifying an emoji for git events and an emoji for ticket events
 - Partial transformation from Markdown->Slack markup for ticket descriptions and comments
 - Improve ticket branch push logging by listing up to 5 commits and linking to the compare pages.
 - Switch to a cached thread pool
