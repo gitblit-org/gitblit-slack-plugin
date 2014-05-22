@@ -334,13 +334,46 @@ public class SlackTicketHook extends TicketHook {
     		return markdown;
     	}
 
+    	// extract blockquotes, insert placeholders, and render the blockquotes individually
+    	final String placeholder = "!!BLOCKQUOTE!!";
+    	List<String> list = new ArrayList<>();
+    	StringBuilder sb = new StringBuilder();
+    	StringBuilder bq = new StringBuilder();
+    	for (String line : markdown.split("\n")) {
+    		if (line.length() > 0) {
+    			if (line.startsWith("> ")) {
+    				// accumulate blockquotes
+    				boolean newBQ = bq.length() == 0;
+    				bq.append(line.substring(2)).append('\n');
+    				if (newBQ) {
+    					// insert a placeholder
+    					sb.append(placeholder).append(list.size()).append('\n');
+    				}
+    				continue;
+    			} else if (bq.length() > 0) {
+    				// render blockquote by itself and reinject blockquote syntax
+    				String quote = bq.toString();
+    				String rendered = renderMarkdown(quote, repository);
+    				bq.setLength(0);
+    				StringBuilder rsb = new StringBuilder();
+    				for (String rl : rendered.split("\n")) {
+    					rsb.append("> ").append(rl).append('\n');
+    				}
+    				list.add(rsb.toString());
+    			}
+    		}
+    		sb.append(line).append('\n');
+    	}
+
+    	String text = sb.toString();
+
     	try {
     		IRuntimeManager runtimeManager = GitblitContext.getManager(IRuntimeManager.class);
     		String canonicalUrl = runtimeManager.getSettings().getString(Keys.web.canonicalUrl, "https://localhost:8443");
 
     		// emphasize and link mentions
     		String mentionReplacement = String.format(" **[@$1](%1s/user/$1)**", canonicalUrl);
-    		String text = markdown.replaceAll("\\s@([A-Za-z0-9-_]+)", mentionReplacement);
+    		text = text.replaceAll("\\s@([A-Za-z0-9-_]+)", mentionReplacement);
 
     		// link ticket refs
     		String ticketReplacement = MessageFormat.format("$1[#$2]({0}/tickets?r={1}&h=$2)$3", canonicalUrl, repository);
@@ -357,6 +390,12 @@ public class SlackTicketHook extends TicketHook {
 			String slackMarkup = new SlackMarkupSerializer().toHtml(astRoot);
 			slackMarkup = slackMarkup.replace("<pre><code>", "```\n");
 			slackMarkup = slackMarkup.replace("</code></pre>", "```\n");
+
+			// re-insert blockquotes
+			for (int i = 0; i < list.size(); i++) {
+				String quote = list.get(i);
+				slackMarkup = slackMarkup.replace(placeholder + i, quote);
+			}
 			return slackMarkup;
 		} catch (ParsingTimeoutException e) {
 			log.error(null, e);
