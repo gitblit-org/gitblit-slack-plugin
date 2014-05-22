@@ -15,7 +15,9 @@
  */
 package com.gitblit.plugin.slack;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +25,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
@@ -220,10 +224,37 @@ public class Slacker implements IManager {
 
 		post.setEntity(new UrlEncodedFormEntity(nvps, "UTF-8"));
 
-		client.execute(post);
+		HttpResponse response = client.execute(post);
 
-		// replace this with post.closeConnection() after JGit updates to HttpClient 4.2
-		post.abort();
+		int rc = response.getStatusLine().getStatusCode();
+
+		if (HttpStatus.SC_OK == rc) {
+			// replace this with post.closeConnection() after JGit updates to HttpClient 4.2
+			post.abort();
+		} else {
+			String result = null;
+			InputStream is = response.getEntity().getContent();
+			try {
+				byte [] buffer = new byte[8192];
+				ByteArrayOutputStream os = new ByteArrayOutputStream();
+				int len = 0;
+				while ((len = is.read(buffer)) > -1) {
+					os.write(buffer, 0, len);
+				}
+				result = os.toString("UTF-8");
+			} finally {
+				if (is != null) {
+					is.close();
+				}
+			}
+
+			log.error("Slack plugin sent:");
+			log.error(json);
+			log.error("Slack returned:");
+			log.error(result);
+
+			throw new RuntimeException(String.format("Slack Error (%s): %s", rc, result));
+		}
 	}
 
 	private static class SlackerTask implements Serializable, Callable<Boolean> {
