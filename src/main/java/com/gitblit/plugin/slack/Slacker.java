@@ -253,7 +253,7 @@ public class Slacker implements IManager {
 			log.error("Slack returned:");
 			log.error(result);
 
-			throw new RuntimeException(String.format("Slack Error (%s): %s", rc, result));
+			throw new IOException(String.format("Slack Error (%s): %s", rc, result));
 		}
 	}
 
