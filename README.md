@@ -14,7 +14,7 @@ This plugin is referenced in the Gitblit Plugin Registry and you may install it 
     ssh host plugin install slack
     ssh host plugin ls
 
-Alternatively, you can download the zip and manually copy it to your `${baseFolder}/plugins` directory.
+Alternatively, you can download the zip from [here](http://plugins.gitblit.com) manually copy it to your `${baseFolder}/plugins` directory.
 
 ### Setup
 
