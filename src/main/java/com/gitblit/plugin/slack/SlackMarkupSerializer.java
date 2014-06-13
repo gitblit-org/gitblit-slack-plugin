@@ -82,6 +82,14 @@ public class SlackMarkupSerializer extends ToHtmlSerializer {
     	case "blockquote":
     		pre = "> ";
     		break;
+    	case "ul":
+    	case "ol":
+    		pre = post = "\n";
+    		break;
+    	case "li":
+    		pre = " - ";
+    		post = "\n";
+    		break;
     	default:
     		// unsupported transform type
     		log.warn("Slack does not offer a markup substitute for tag {}", tag);

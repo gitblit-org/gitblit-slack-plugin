@@ -1,5 +1,9 @@
 ## Gitblit Slack plugin
 
+### 1.2.1
+
+- Fix Markdown->SlackMarkup transforms for ordered <ol> and unordered <ul> lists. This defaults to an dash-based list.
+
 ### 1.2.0
 
 - Allow specifying an emoji for git events and an emoji for ticket events
