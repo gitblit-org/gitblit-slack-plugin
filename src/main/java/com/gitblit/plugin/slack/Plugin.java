@@ -30,6 +30,8 @@ public class Plugin extends GitblitPlugin {
 
 	public static final String SETTING_TOKEN = "slack.token";
 
+	public static final String SETTING_POST_AS_USER = "slack.postAsUser";
+
 	public static final String SETTING_DEFAULT_CHANNEL = "slack.defaultChannel";
 
 	public static final String SETTING_USE_PROJECT_CHANNELS = "slack.useProjectChannels";

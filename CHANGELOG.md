@@ -2,6 +2,7 @@
 
 ### 1.3.0
 
+- Post events using user identity & gravatar, may be disabled
 - Fix patchset review events
 
 ### 1.2.1

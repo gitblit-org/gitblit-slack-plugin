@@ -32,6 +32,7 @@ There a handful of additional optional settings:
 
     slack.defaultChannel = general
     slack.useProjectChannels = false
+    slack.postAsUser = true
     slack.defaultEmoji = 
     slack.gitEmoji = 
     slack.ticketEmoji = 
@@ -41,6 +42,14 @@ There a handful of additional optional settings:
     slack.postTicketComments = true
     slack.postBranches = true
     slack.postTags = true
+
+#### slack.postAsUser
+
+By default this plugin will post events to your channels using the identity of the user triggering the event.  This will include gravatar thumbnails.  If this setting is disabled, events will be posted using the *Gitblit* identity and will use whatever you may have optionally specified for the *emoji* settings.
+
+#### slack.*Emoji
+
+You may specify emoji as `:name:` or you may specify complete urls.  These settings are ignored if you have enabled *slack.postAsUser*, which is enabled by default.
 
 #### slack.allowUserPosts
 

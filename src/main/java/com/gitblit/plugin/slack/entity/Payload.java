@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import com.gitblit.utils.StringUtils;
 import com.google.gson.annotations.SerializedName;
 
 public class Payload {
@@ -66,6 +67,22 @@ public class Payload {
 
 	public Payload iconEmoji(String emoji) {
 		setIconEmoji(emoji);
+		return this;
+	}
+
+	public Payload icon(String icon) {
+		if (!StringUtils.isEmpty(icon)) {
+			switch (icon.charAt(0)) {
+			case ':':
+				setIconEmoji(icon);
+				break;
+			case 'h':
+				setIconUrl(icon);
+				break;
+			default:
+				return this;
+			}
+		}
 		return this;
 	}
 

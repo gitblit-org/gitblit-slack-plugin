@@ -23,6 +23,7 @@ import org.kohsuke.args4j.Option;
 import ro.fortsoft.pf4j.Extension;
 
 import com.gitblit.manager.IRuntimeManager;
+import com.gitblit.models.UserModel;
 import com.gitblit.plugin.slack.entity.Payload;
 import com.gitblit.servlet.GitblitContext;
 import com.gitblit.transport.ssh.commands.CommandMetaData;
@@ -30,6 +31,7 @@ import com.gitblit.transport.ssh.commands.DispatchCommand;
 import com.gitblit.transport.ssh.commands.SshCommand;
 import com.gitblit.transport.ssh.commands.UsageExample;
 import com.gitblit.transport.ssh.commands.UsageExamples;
+import com.gitblit.utils.ActivityUtils;
 import com.gitblit.utils.StringUtils;
 
 @Extension
@@ -96,32 +98,44 @@ public class SlackDispatcher extends DispatchCommand {
 		String message;
 
 		@Option(name = "--emoji", metaVar = "EMOJI")
-		String emoji = "envelope";
+		String emoji = null;
 
 		/**
 		 * Post a message
 		 */
 		@Override
 		public void run() throws Failure {
+		    UserModel user = getContext().getClient().getUser();
+
 			Payload payload = Payload.instance(message);
+		    payload.username(user.getDisplayName());
 		    payload.unfurlLinks(true);
 
 		    if (!StringUtils.isEmpty(emoji)) {
-		    	if (emoji.charAt(0) != ':') {
-		    		emoji = ":" + emoji;
+		    	if (emoji.indexOf("://") > -1) {
+		    		payload.iconUrl(emoji);
+		    	} else {
+		    		// emoji
+		    		if (emoji.charAt(0) != ':') {
+		    			emoji = ":" + emoji;
+		    		}
+		    		if (emoji.charAt(emoji.length() - 1) != ':') {
+		    			emoji = emoji + ":";
+		    		}
+		    		payload.iconEmoji(emoji);
 		    	}
-		    	if (emoji.charAt(emoji.length() - 1) != ':') {
-		    		emoji = emoji + ":";
-		    	}
-		    	payload.iconEmoji(emoji);
+		    } else {
+				if (StringUtils.isEmpty(user.emailAddress)) {
+					payload.iconEmoji(":envelope:");
+				} else {
+					String url = ActivityUtils.getGravatarThumbnailUrl(user.emailAddress, 36);
+					payload.iconUrl(url);
+				}
 		    }
 
 		    if (!StringUtils.isEmpty(channel)) {
 		    	payload.channel(channel);
 		    }
-
-			String displayName = getContext().getClient().getUser().getDisplayName();
-		    payload.username(displayName);
 
 			IRuntimeManager runtimeManager = GitblitContext.getManager(IRuntimeManager.class);
 			Slacker.init(runtimeManager);

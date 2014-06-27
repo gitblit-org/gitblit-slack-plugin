@@ -57,6 +57,7 @@ import com.gitblit.plugin.slack.entity.Attachment;
 import com.gitblit.plugin.slack.entity.Field;
 import com.gitblit.plugin.slack.entity.Payload;
 import com.gitblit.servlet.GitblitContext;
+import com.gitblit.utils.ActivityUtils;
 import com.gitblit.utils.StringUtils;
 
 /**
@@ -98,16 +99,25 @@ public class SlackTicketHook extends TicketHook {
 
     	Change change = ticket.changes.get(0);
     	IUserManager userManager = GitblitContext.getManager(IUserManager.class);
+    	boolean postAsUser = settings.getBoolean(Plugin.SETTING_POST_AS_USER, true);
 
-    	UserModel reporter = userManager.getUserModel(change.author);
-    	String msg = String.format("*%s* has created *%s* <%s|ticket-%s>", reporter.getDisplayName(),
+    	UserModel user = userManager.getUserModel(change.author);
+    	String author;
+    	if (postAsUser) {
+    		// posting as user, do not BOLD username
+    		author = user.getDisplayName();
+    	} else {
+    		// posting as Gitblit, BOLD username to draw attention
+    		author = "*" + user.getDisplayName() + "*";
+    	}
+
+    	String msg = String.format("%s has created *%s* <%s|ticket-%s>", author,
     			StringUtils.stripDotGit(ticket.repository), getUrl(ticket), ticket.number);
 
-    	String emoji = settings.getString(Plugin.SETTING_TICKET_EMOJI, null);
-
-    	Payload payload = Payload.instance(msg)
-    			.iconEmoji(emoji)
+    	Payload payload = Payload
+    			.instance(msg)
                 .attachments(fields(ticket, change, fieldExclusions));
+    	attribute(payload, user);
 
    		slacker.sendAsync(payload);
     }
@@ -123,11 +133,21 @@ public class SlackTicketHook extends TicketHook {
 				TicketModel.Field.mergeSha));
 
 		IUserManager userManager = GitblitContext.getManager(IUserManager.class);
-		String author = "*" + userManager.getUserModel(change.author).getDisplayName() + "*";
+    	boolean postAsUser = settings.getBoolean(Plugin.SETTING_POST_AS_USER, true);
+
+		UserModel user = userManager.getUserModel(change.author);
+		String author;
+    	if (postAsUser) {
+    		// posting as user, do not BOLD username
+    		author = user.getDisplayName();
+    	} else {
+    		// posting as Gitblit, BOLD username to draw attention
+    		author = "*" + user.getDisplayName() + "*";
+    	}
+
 		String url = String.format("<%s|ticket-%s>", getUrl(ticket), ticket.number);
 		String repo = "*" + StringUtils.stripDotGit(ticket.repository) + "*";
 		String msg = null;
-    	String emoji = settings.getString(Plugin.SETTING_TICKET_EMOJI, null);
 
 		if (change.hasReview()) {
 			/*
@@ -135,22 +155,7 @@ public class SlackTicketHook extends TicketHook {
 			 */
     		msg = String.format("%s has reviewed %s %s patchset %s-%s", author, repo, url,
     				change.review.patchset, change.review.rev);
-    		switch (change.review.score) {
-    		case approved:
-    			emoji = ":white_check_mark:";
-    			break;
-    		case looks_good:
-    			emoji = ":thumbsup:";
-    			break;
-    		case needs_improvement:
-    			emoji = ":thumbsdown:";
-    			break;
-    		case vetoed:
-    			emoji = ":no_entry_sign:";
-    			break;
-    		default:
-    			break;
-    		}
+
 		} else if (change.hasPatchset()) {
 			/*
 			 * New Patchset
@@ -241,15 +246,42 @@ public class SlackTicketHook extends TicketHook {
 			return;
 		}
 
-		Payload payload = Payload.instance(msg)
-				.iconEmoji(emoji)
+		Payload payload = Payload
+				.instance(msg)
 				.attachments(fields(ticket, change, fieldExclusions));
+		attribute(payload, user);
 
 		IRepositoryManager repositoryManager = GitblitContext.getManager(IRepositoryManager.class);
 		RepositoryModel repository = repositoryManager.getRepositoryModel(ticket.repository);
    		slacker.setChannel(repository, payload);
    		slacker.sendAsync(payload);
     }
+
+	/**
+	 * Optionally stamp the payload with an emoji, icon url, or user attributions.
+	 *
+	 * @param payload
+	 * @param user
+	 */
+	protected void attribute(Payload payload, UserModel user) {
+		IRuntimeManager runtimeManager = GitblitContext.getManager(IRuntimeManager.class);
+    	String icon = runtimeManager.getSettings().getString(Plugin.SETTING_TICKET_EMOJI, null);
+    	String defaultIcon = runtimeManager.getSettings().getString(Plugin.SETTING_DEFAULT_EMOJI, null);
+    	if (StringUtils.isEmpty(icon)) {
+    		icon = defaultIcon;
+    	}
+
+    	// set the username and gravatar
+    	boolean postAsUser = runtimeManager.getSettings().getBoolean(Plugin.SETTING_POST_AS_USER, true);
+    	if (postAsUser) {
+    		payload.username(user.getDisplayName());
+    		if (!StringUtils.isEmpty(user.emailAddress)) {
+    			icon = ActivityUtils.getGravatarThumbnailUrl(user.emailAddress, 36);
+    		}
+		}
+
+		payload.icon(icon);
+	}
 
     protected Attachment fields(TicketModel ticket, Change change, Set<TicketModel.Field> fieldExclusions) {
     	Map<TicketModel.Field, String> filtered = new HashMap<TicketModel.Field, String>();

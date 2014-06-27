@@ -39,6 +39,7 @@ import com.gitblit.models.RepositoryModel;
 import com.gitblit.models.UserModel;
 import com.gitblit.plugin.slack.entity.Payload;
 import com.gitblit.servlet.GitblitContext;
+import com.gitblit.utils.ActivityUtils;
 import com.gitblit.utils.StringUtils;
 
 /**
@@ -144,14 +145,23 @@ public class SlackReceiveHook extends ReceiveHook {
 		String shortRef = Repository.shortenRefName(cmd.getRefName());
 		String repoUrl = getUrl(repo.name, null, null);
 		String logUrl = getUrl(repo.name, shortRef, null);
+		boolean postAsUser = receivePack.getGitblit().getSettings().getBoolean(Plugin.SETTING_POST_AS_USER, true);
 
-		String msg = String.format("*%s* has created %s <%s|%s> in <%s|%s>", user.getDisplayName(),
+		String author;
+    	if (postAsUser) {
+    		// posting as user, do not BOLD username
+    		author = user.getDisplayName();
+    	} else {
+    		// posting as Gitblit, BOLD username to draw attention
+    		author = "*" + user.getDisplayName() + "*";
+    	}
+
+		String msg = String.format("%s has created %s <%s|%s> in <%s|%s>", author,
     			rType.name().toLowerCase(), logUrl, shortRef, repoUrl, StringUtils.stripDotGit(repo.name));
 
-		IRuntimeManager runtimeManager = GitblitContext.getManager(IRuntimeManager.class);
-    	String emoji = runtimeManager.getSettings().getString(Plugin.SETTING_GIT_EMOJI, null);
+    	Payload payload = Payload.instance(msg);
+    	attribute(payload, user);
 
-    	Payload payload = Payload.instance(msg).iconEmoji(emoji);
     	slacker.setChannel(repo, payload);
     	slacker.sendAsync(payload);
     }
@@ -169,6 +179,16 @@ public class SlackReceiveHook extends ReceiveHook {
 		RepositoryModel repo = receivePack.getRepositoryModel();
 		String shortRef = Repository.shortenRefName(cmd.getRefName());
 		String repoUrl = getUrl(repo.name, null, null);
+		boolean postAsUser = receivePack.getGitblit().getSettings().getBoolean(Plugin.SETTING_POST_AS_USER, true);
+
+		String author;
+    	if (postAsUser) {
+    		// posting as user, do not BOLD username
+    		author = user.getDisplayName();
+    	} else {
+    		// posting as Gitblit, BOLD username to draw attention
+    		author = "*" + user.getDisplayName() + "*";
+    	}
 
 		List<RevCommit> commits = null;
 		String action;
@@ -195,7 +215,7 @@ public class SlackReceiveHook extends ReceiveHook {
 		}
 
 		StringBuilder sb = new StringBuilder();
-		String msg = String.format("*%s* has %s <%s|%s> in <%s|%s>", user.getDisplayName(), action,
+		String msg = String.format("%s has %s <%s|%s> in <%s|%s>", author, action,
 				 url, shortRef, repoUrl, StringUtils.stripDotGit(repo.name));
 		sb.append(msg);
 
@@ -232,10 +252,9 @@ public class SlackReceiveHook extends ReceiveHook {
 			}
 		}
 
-		IRuntimeManager runtimeManager = GitblitContext.getManager(IRuntimeManager.class);
-    	String emoji = runtimeManager.getSettings().getString(Plugin.SETTING_GIT_EMOJI, null);
+    	Payload payload = Payload.instance(sb.toString());
+    	attribute(payload, user);
 
-    	Payload payload = Payload.instance(sb.toString()).iconEmoji(emoji);
     	slacker.setChannel(repo, payload);
     	slacker.sendAsync(payload);
 	}
@@ -252,16 +271,51 @@ public class SlackReceiveHook extends ReceiveHook {
 		RepositoryModel repo = receivePack.getRepositoryModel();
 		String shortRef = Repository.shortenRefName(cmd.getRefName());
 		String repoUrl = getUrl(repo.name, null, null);
+		boolean postAsUser = receivePack.getGitblit().getSettings().getBoolean(Plugin.SETTING_POST_AS_USER, true);
 
-		String msg = String.format("*%s* has deleted %s *%s* from <%s|%s>", user.getDisplayName(),
+		String author;
+    	if (postAsUser) {
+    		// posting as user, do not BOLD username
+    		author = user.getDisplayName();
+    	} else {
+    		// posting as Gitblit, BOLD username to draw attention
+    		author = "*" + user.getDisplayName() + "*";
+    	}
+
+		String msg = String.format("%s has deleted %s *%s* from <%s|%s>", author,
     			rType.name().toLowerCase(), shortRef, repoUrl, StringUtils.stripDotGit(repo.name));
 
-		IRuntimeManager runtimeManager = GitblitContext.getManager(IRuntimeManager.class);
-    	String emoji = runtimeManager.getSettings().getString(Plugin.SETTING_GIT_EMOJI, null);
+    	Payload payload = Payload.instance(msg);
+    	attribute(payload, user);
 
-    	Payload payload = Payload.instance(msg).iconEmoji(emoji);
     	slacker.setChannel(repo, payload);
     	slacker.sendAsync(payload);
+	}
+
+	/**
+	 * Optionally stamp the payload with an emoji, icon url, or user attributions.
+	 *
+	 * @param payload
+	 * @param user
+	 */
+	protected void attribute(Payload payload, UserModel user) {
+		IRuntimeManager runtimeManager = GitblitContext.getManager(IRuntimeManager.class);
+    	String icon = runtimeManager.getSettings().getString(Plugin.SETTING_GIT_EMOJI, null);
+    	String defaultIcon = runtimeManager.getSettings().getString(Plugin.SETTING_DEFAULT_EMOJI, null);
+    	if (StringUtils.isEmpty(icon)) {
+    		icon = defaultIcon;
+    	}
+
+    	// set the username and gravatar
+    	boolean postAsUser = runtimeManager.getSettings().getBoolean(Plugin.SETTING_POST_AS_USER, true);
+    	if (postAsUser) {
+    		payload.username(user.getDisplayName());
+    		if (!StringUtils.isEmpty(user.emailAddress)) {
+    			icon = ActivityUtils.getGravatarThumbnailUrl(user.emailAddress, 36);
+    		}
+		}
+
+		payload.icon(icon);
 	}
 
     /**

@@ -186,7 +186,9 @@ public class Slacker implements IManager {
 		String slackUrl = getURL();
 
 		payload.setUnfurlLinks(true);
-		payload.setUsername(Constants.NAME);
+		if (StringUtils.isEmpty(payload.getUsername())) {
+			payload.setUsername(Constants.NAME);
+		}
 
 		String defaultChannel = runtimeManager.getSettings().getString(Plugin.SETTING_DEFAULT_CHANNEL, null);
 		if (!StringUtils.isEmpty(defaultChannel) && StringUtils.isEmpty(payload.getChannel())) {
