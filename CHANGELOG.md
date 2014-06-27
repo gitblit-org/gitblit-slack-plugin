@@ -1,5 +1,9 @@
 ## Gitblit Slack plugin
 
+### 1.3.0
+
+- Fix patchset review events
+
 ### 1.2.1
 
 - Fix Markdown->SlackMarkup transforms for ordered <ol> and unordered <ul> lists. This defaults to an dash-based list.

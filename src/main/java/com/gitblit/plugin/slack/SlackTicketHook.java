@@ -134,7 +134,7 @@ public class SlackTicketHook extends TicketHook {
 			 * Patchset review
 			 */
     		msg = String.format("%s has reviewed %s %s patchset %s-%s", author, repo, url,
-    				change.patchset.number, change.patchset.rev);
+    				change.review.patchset, change.review.rev);
     		switch (change.review.score) {
     		case approved:
     			emoji = ":white_check_mark:";
