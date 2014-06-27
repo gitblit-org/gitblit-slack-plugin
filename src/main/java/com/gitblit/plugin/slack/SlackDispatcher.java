@@ -112,18 +112,7 @@ public class SlackDispatcher extends DispatchCommand {
 		    payload.unfurlLinks(true);
 
 		    if (!StringUtils.isEmpty(emoji)) {
-		    	if (emoji.indexOf("://") > -1) {
-		    		payload.iconUrl(emoji);
-		    	} else {
-		    		// emoji
-		    		if (emoji.charAt(0) != ':') {
-		    			emoji = ":" + emoji;
-		    		}
-		    		if (emoji.charAt(emoji.length() - 1) != ':') {
-		    			emoji = emoji + ":";
-		    		}
-		    		payload.iconEmoji(emoji);
-		    	}
+	    		payload.icon(emoji);
 		    } else {
 				if (StringUtils.isEmpty(user.emailAddress)) {
 					payload.iconEmoji(":envelope:");

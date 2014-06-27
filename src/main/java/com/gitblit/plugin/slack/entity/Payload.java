@@ -72,15 +72,10 @@ public class Payload {
 
 	public Payload icon(String icon) {
 		if (!StringUtils.isEmpty(icon)) {
-			switch (icon.charAt(0)) {
-			case ':':
-				setIconEmoji(icon);
-				break;
-			case 'h':
+			if (icon.indexOf("://") == -1) {
+	    		iconEmoji(icon);
+			} else {
 				setIconUrl(icon);
-				break;
-			default:
-				return this;
 			}
 		}
 		return this;
@@ -138,6 +133,15 @@ public class Payload {
 
 	public void setIconEmoji(String iconEmoji) {
 		this.iconUrl = null;
+
+		if (!StringUtils.isEmpty(iconEmoji)) {
+			if (iconEmoji.charAt(0) != ':') {
+				iconEmoji = ":" + iconEmoji;
+			}
+			if (iconEmoji.charAt(iconEmoji.length() - 1) != ':') {
+				iconEmoji = iconEmoji + ":";
+			}
+		}
 		this.iconEmoji = iconEmoji;
 	}
 
