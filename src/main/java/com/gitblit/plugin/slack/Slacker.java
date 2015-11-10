@@ -104,22 +104,11 @@ public class Slacker implements IManager {
 	}
 
 	public String getURL() throws IOException {
-		String team = runtimeManager.getSettings().getString(Plugin.SETTING_TEAM, null);
-		if (StringUtils.isEmpty(team)) {
-			throw new IOException(String.format("Could not send message to Slack because '%s' is not defined!", Plugin.SETTING_TEAM));
+		String url = runtimeManager.getSettings().getString(Plugin.SETTING_URL, null);
+		if (StringUtils.isEmpty(url)) {
+			throw new IOException(String.format("Could not send message to Slack because '%s' is not defined!", Plugin.SETTING_URL));
 		}
-
-		String token = runtimeManager.getSettings().getString(Plugin.SETTING_TOKEN, null);
-		if (StringUtils.isEmpty(token)) {
-			throw new IOException(String.format("Could not send message to Slack because '%s' is not defined!", Plugin.SETTING_TOKEN));
-		}
-
-		String hook = runtimeManager.getSettings().getString(Plugin.SETTING_HOOK, "incoming-webhook");
-		if (StringUtils.isEmpty(hook)) {
-			hook = "incoming-webhook";
-		}
-
-		return String.format("https://%s.slack.com/services/hooks/%s?token=%s", team.toLowerCase(), hook, token);
+		return url;
 	}
 
 	/**

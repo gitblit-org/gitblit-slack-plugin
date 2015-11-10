@@ -24,11 +24,7 @@ import com.gitblit.servlet.GitblitContext;
 
 public class Plugin extends GitblitPlugin {
 
-	public static final String SETTING_TEAM = "slack.team";
-
-	public static final String SETTING_HOOK = "slack.hook";
-
-	public static final String SETTING_TOKEN = "slack.token";
+	public static final String SETTING_URL = "slack.url";
 
 	public static final String SETTING_POST_AS_USER = "slack.postAsUser";
 

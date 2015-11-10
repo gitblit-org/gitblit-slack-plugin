@@ -1,5 +1,12 @@
 ## Gitblit Slack plugin
 
+## 1.4.0-SNAPSHOT
+
+- Update to Gitblit 1.7.0
+- Add `slack.url` config setting
+- Remove `slack.team`
+- Remove `slack.token`
+
 ### 1.3.0
 
 - Post events using user identity & gravatar, may be disabled

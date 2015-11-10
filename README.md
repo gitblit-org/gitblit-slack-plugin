@@ -18,15 +18,15 @@ Alternatively, you can download the zip from [here](http://plugins.gitblit.com) 
 
 ### Setup
 
-At a bare minimum you'll need two settings configured in `gitblit.properties`.
+At a bare minimum you'll need one setting configured in `gitblit.properties`.
 
-    slack.team = yourTeam
-    slack.token = yourToken
+    slack.url = https://hooks.slack.com/services/yada/yadayada
+
 
 If you have the `powertools` plugin installed, you may configure this over SSH:
 
-    ssh host gb config slack.team yourTeam
-    ssh host gb config slack.token yourToken
+    ssh host gb config slack.url https://hooks.slack.com/services/yada/yadayada
+
 
 There a handful of additional optional settings:
 
